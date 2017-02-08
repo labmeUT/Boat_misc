@@ -26,8 +26,8 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 //This is the I2C Address of the MCP4725, by default (A0 pulled to GND).
 //Please note that this breakout is for the MCP4725A0. 
 //For devices with A0 pulled HIGH, use 0x61
-#define MCP4725_ADDR1 0x60
-#define MCP4725_ADDR2 0x61 // A0 pin pulled up
+#define MCP4725_ADDR1 0x61 // A0 pin pulled up
+#define MCP4725_ADDR2 0x60 
 
 //user difinition
 #define STEER_CH_PIN           6     //pin connected to steering ch
@@ -53,7 +53,6 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define PD_MODE_500KOHM                 0x06  //PowerDown Mode option(4of4):Analog output pin is pulled down by 500kohm resistor
 #define FASTMODE_PD_BIT_OFFSET          3     //PowerDown Option Bit offsets when it uses FastMode Write command.
 
-
 int ch1; // Here's where we'll keep our channel values
 int ch2;
 
@@ -77,8 +76,9 @@ void loop()
   int val1 = DA_OUTVAL_MID; //if these are middle, motors stop.
   int val2 = DA_OUTVAL_MID; //
   
-  
+  delay(10);
   ch1 = pulseIn(STEER_CH_PIN, HIGH, PULSEIN_TIMEOUT);    // Read the pulse width of 
+  delay(10);
   ch2 = pulseIn(THROTTLE_CH_PIN, HIGH, PULSEIN_TIMEOUT); // each channel
   
   if(ch1 != PULSEIN_RETVAL_TIMEOUT && ch2 != PULSEIN_RETVAL_TIMEOUT)
@@ -93,18 +93,23 @@ void loop()
     val1 = DA_OUTVAL_MID;
     val2 = DA_OUTVAL_MID;
   }
+
   // output I2C to MCP4725s
   Wire.beginTransmission(MCP4725_ADDR1);
-  Wire.write(NORMAL_WRITE_TO_REG & PD_MODE_NORMAL);  // cmd to update the DAC
-  Wire.write(val1 >> BIT_OFFSET);               // the 8 most significant bits...
-  Wire.write((val1 & 0x0F) << BIT_OFFSET);      // the 4 least significant bits...
+  Wire.write(NORMAL_WRITE_TO_REG | PD_MODE_NORMAL);  // cmd to update the DAC
+  Wire.write((byte)(val1 >> BIT_OFFSET));               // the 8 most significant bits...
+  Wire.write((byte)((val1 & 0x0F) << BIT_OFFSET));      // the 4 least significant bits...
   Wire.endTransmission();
-  
+
   Wire.beginTransmission(MCP4725_ADDR2);
-  Wire.write(NORMAL_WRITE_TO_REG & PD_MODE_NORMAL);  // cmd to update the DAC
-  Wire.write(val2 >> BIT_OFFSET);               // the 8 most significant bits...
-  Wire.write((val2 & 0x0F) << BIT_OFFSET);      // the 4 least significant bits...
+  Wire.write(NORMAL_WRITE_TO_REG | PD_MODE_NORMAL);  // cmd to update the DAC
+  Wire.write((byte)(val2 >> BIT_OFFSET));               // the 8 most significant bits...
+  Wire.write((byte)((val2 & 0x0F) << BIT_OFFSET));      // the 4 least significant bits...
   Wire.endTransmission();
+
+  /*
+  
+  */
 }
 
 //range convert from PWM pulse width to MCP4725 12bit value 
@@ -122,7 +127,8 @@ int cnvrng(int _pwm)
   }
 
   //scale convert from PWM to 12bit output value
-  out = (DA_OUTVAL_MAX - DA_OUTVAL_MIN) * (pwm - PWM_VAL_MIN) / (PWM_VAL_MAX - PWM_VAL_MIN) + DA_OUTVAL_MIN;
+  //out = (DA_OUTVAL_MAX - DA_OUTVAL_MIN) * (pwm - PWM_VAL_MIN) / (PWM_VAL_MAX - PWM_VAL_MIN) + DA_OUTVAL_MIN;
+  out = map( pwm, PWM_VAL_MIN, PWM_VAL_MAX, DA_OUTVAL_MIN, DA_OUTVAL_MAX );
 
   //constrain 12bit output value
   if(out < DA_OUTVAL_MIN){
