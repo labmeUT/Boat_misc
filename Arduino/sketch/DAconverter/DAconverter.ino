@@ -26,7 +26,20 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 //This is the I2C Address of the MCP4725, by default (A0 pulled to GND).
 //Please note that this breakout is for the MCP4725A0. 
 #define MCP4725_ADDR1 0x60
-#define MCP4725_ADDR2 0x61
+#define MCP4725_ADDR2 0x61 // A0 pin pulled up
+
+//user difinition
+#define STEER_CH_PIN           6     //pin connected to steering ch
+#define THROTTLE_CH_PIN        7     //pin connected to throttle ch 
+#define PWM_VAL_MAX            2000  //PWM input value max
+#define PWM_VAL_MID            1500  //PWM input value middle
+#define PWM_VAL_MIN            1000  //PWM input value min
+#define PULSEIN_RETVAL_TIMEOUT 0     //pulseIn return value when it is timeout
+#define PULSEIN_TIMEOUT        25000 //pulseIn timeout [us]
+#define ONEBYTE_OFFSET         4     //offset bitnumber
+#define DA_OUTVAL_MAX          4095  //MCP4725 I2C output value max
+#define DA_OUTVAL_MID          2047  //MCP4725 I2C output value middle
+#define DA_OUTVAL_MIN          0     //MCP4725 I2C output value min
 
 int ch1; // Here's where we'll keep our channel values
 int ch2;
@@ -38,77 +51,74 @@ int ch2;
 
 void setup()
 { 
-  pinMode(5, INPUT); // Set our input pins as such
-  pinMode(6, INPUT);
+  pinMode(STEER_CH_PIN, INPUT); // Set our input pins as such
+  pinMode(THROTTLE_CH_PIN, INPUT);
   
   Wire.begin();
-  Serial.begin(9600);
-
 }
 //---------------------------------------------------
 void loop()
 {
-  int ch1;
-  int ch2;
-  int val1=2000;
-  int val2=2000;
+  int ch1  = PWM_VAL_MID;   //initial value is middle because it is safe
+  int ch2  = PWM_VAL_MID;   //
+  int val1 = DA_OUTVAL_MID; //if these are middle, motors stop.
+  int val2 = DA_OUTVAL_MID; //
   
   
-  ch1 = pulseIn(5, HIGH, 25000); // Read the pulse width of 
-  ch2 = pulseIn(6, HIGH, 25000); // each channel
-  if(ch1 != 0 && ch2 != 0)
+  ch1 = pulseIn(STEER_CH_PIN, HIGH, PULSEIN_TIMEOUT);    // Read the pulse width of 
+  ch2 = pulseIn(THROTTLE_CH_PIN, HIGH, PULSEIN_TIMEOUT); // each channel
+  
+  if(ch1 != PULSEIN_RETVAL_TIMEOUT && ch2 != PULSEIN_RETVAL_TIMEOUT)
   {
+    // convert value
     val1 = cnvrng(ch1);
     val2 = cnvrng(ch2);
   }
   else
   {
-    val1 = 1920;
-    val2 = 1920;
+    // output middle value
+    val1 = DA_OUTVAL_MID;
+    val2 = DA_OUTVAL_MID;
   }
-  
+  // output I2C to MCP4725s
   Wire.beginTransmission(MCP4725_ADDR1);
-  Wire.write(64);   // cmd to update the DAC
-  Wire.write(val1 >> 4);        // the 8 most significant bits...
-  Wire.write((val1 & 15) << 4); // the 4 least significant bits...
+  Wire.write(64);                                  // cmd to update the DAC
+  Wire.write(val1 >> ONEBYTE_OFFSET);              // the 8 most significant bits...
+  Wire.write((val1 & 0x0F) << ONEBYTE_OFFSET);     // the 4 least significant bits...
   Wire.endTransmission();
   
   Wire.beginTransmission(MCP4725_ADDR2);
-  Wire.write(64);                     // cmd to update the DAC
-  Wire.write(val2 >> 4);        // the 8 most significant bits...
-  Wire.write((val2 & 15) << 4); // the 4 least significant bits...
+  Wire.write(64);                                  // cmd to update the DAC
+  Wire.write(val2 >> ONEBYTE_OFFSET);              // the 8 most significant bits...
+  Wire.write((val2 & 0x0F) << ONEBYTE_OFFSET);     // the 4 least significant bits...
   Wire.endTransmission();
-  
- /* Serial.print("ch1:");
-  Serial.print(ch1);
-  Serial.print(" val1:");
-  Serial.print(val1);
-  
-  Serial.print(" ch2:");
-  Serial.print(ch2);
-  Serial.print(" val2:");
-  Serial.println(val2);*/
-  
-  //delay(50);
-  
-  
-  //lookup = (lookup + 1) & 511;
 }
 
-int cnvrng(int pwm)
+//range convert from PWM pulse width to MCP4725 12bit value 
+int cnvrng(int _pwm)
 {
-  int out;
-  if(pwm > 1020)
-  {
-    out = (pwm-1020)*4;
-  }
-  else
-    out = 0;
+  int out pwm;
   
-  if(out > 4095)
-  {
-    out = 4095;
+  //constrain PWM value
+  if(_pwm < PWM_VAL_MIN){
+    pwm = PWM_VAL_MIN;
+  }else if(_pwm > PWM_VAL_MAX){
+    pwm = PWM_VAL_MAX;
+  }else{
+    pwm = _pwm;
   }
+
+  //scale convert from PWM to 12bit output value
+  out = (DA_OUTVAL_MAX - DA_OUTVAL_MIN) * (pwm - PWM_VAL_MIN) / (PWM_VAL_MAX - PWM_VAL_MIN) + DA_OUTVAL_MIN;
+
+  //constrain 12bit output value
+  if(out < DA_OUTVAL_MIN){
+    out = DA_OUTVAL_MIN;
+  }
+  if(out > DA_OUTVAL_MAX){
+    out = DA_OUTVAL_MAX;
+  }
+   
   return(out);
 }
 
