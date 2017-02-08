@@ -106,10 +106,6 @@ void loop()
   Wire.write((byte)(val2 >> BIT_OFFSET));               // the 8 most significant bits...
   Wire.write((byte)((val2 & 0x0F) << BIT_OFFSET));      // the 4 least significant bits...
   Wire.endTransmission();
-
-  /*
-  
-  */
 }
 
 //range convert from PWM pulse width to MCP4725 12bit value 
@@ -127,7 +123,6 @@ int cnvrng(int _pwm)
   }
 
   //scale convert from PWM to 12bit output value
-  //out = (DA_OUTVAL_MAX - DA_OUTVAL_MIN) * (pwm - PWM_VAL_MIN) / (PWM_VAL_MAX - PWM_VAL_MIN) + DA_OUTVAL_MIN;
   out = map( pwm, PWM_VAL_MIN, PWM_VAL_MAX, DA_OUTVAL_MIN, DA_OUTVAL_MAX );
 
   //constrain 12bit output value
