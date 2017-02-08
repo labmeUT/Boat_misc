@@ -41,6 +41,7 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define DA_OUTVAL_MAX          4095  //MCP4725 I2C output value max
 #define DA_OUTVAL_MID          2047  //MCP4725 I2C output value middle
 #define DA_OUTVAL_MIN          0     //MCP4725 I2C output value min
+#define DA_OUTVAL_OFFSET       100   //Joystick middle point is about 2.4mV. 1 OUTVAL equals to 1.3mV
 //Config Bits
 //Write Option
 #define FAST_WRITE                      0x00  //FastMode Write
@@ -124,7 +125,9 @@ int cnvrng(int _pwm)
 
   //scale convert from PWM to 12bit output value
   out = map( pwm, PWM_VAL_MIN, PWM_VAL_MAX, DA_OUTVAL_MIN, DA_OUTVAL_MAX );
-
+  //Joystick Middle Position Correction
+  out += DA_OUTVAL_OFFSET;
+  
   //constrain 12bit output value
   if(out < DA_OUTVAL_MIN){
     out = DA_OUTVAL_MIN;
