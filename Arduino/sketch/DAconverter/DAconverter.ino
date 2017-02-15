@@ -36,12 +36,15 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define PWM_VAL_MID            1500  //PWM input value middle
 #define PWM_VAL_MIN            1000  //PWM input value min
 #define PULSEIN_RETVAL_TIMEOUT 0     //pulseIn return value when it is timeout
-#define PULSEIN_TIMEOUT        25000 //pulseIn timeout [us]
+#define PULSEIN_TIMEOUT        20000 //pulseIn timeout [us]
 #define BIT_OFFSET             4     //offset bitnumber:because output is 12bit but I2C communication is done in each 8bit 
-#define DA_OUTVAL_MAX          4095  //MCP4725 I2C output value max
+#define DA_OUTVAL_MAX          4095  //MCP4725 I2C output value max (up to 4095)
 #define DA_OUTVAL_MID          2047  //MCP4725 I2C output value middle
-#define DA_OUTVAL_MIN          0     //MCP4725 I2C output value min
+#define DA_OUTVAL_MIN          0     //MCP4725 I2C output value min (down to 0)
+#define DA_OUTVAL_HIGH_LIM     3800  //MCP4725 I2C output value user limitation high value
+#define DA_OUTVAL_LOW_LIM      750   //MCP4725 I2C output value user limitation low value
 #define DA_OUTVAL_OFFSET       100   //Joystick middle point is about 2.4mV. 1 OUTVAL equals to 1.3mV
+
 //Config Bits
 //Write Option
 #define FAST_WRITE                      0x00  //FastMode Write
@@ -58,7 +61,6 @@ int ch1; // Here's where we'll keep our channel values
 int ch2;
 
 
-
 //Sinewave Tables were generated using this calculator:
 //http://www.daycounter.com/Calculators/Sine-Generator-Calculator.phtml
 
@@ -68,6 +70,7 @@ void setup()
   pinMode(THROTTLE_CH_PIN, INPUT);
   
   Wire.begin();
+  //Serial.begin(9600);
 }
 //---------------------------------------------------
 void loop()
@@ -79,7 +82,7 @@ void loop()
   
   delay(10);
   ch1 = pulseIn(STEER_CH_PIN, HIGH, PULSEIN_TIMEOUT);    // Read the pulse width of 
-  delay(10);
+  delay(15);
   ch2 = pulseIn(THROTTLE_CH_PIN, HIGH, PULSEIN_TIMEOUT); // each channel
   
   if(ch1 != PULSEIN_RETVAL_TIMEOUT && ch2 != PULSEIN_RETVAL_TIMEOUT)
@@ -107,6 +110,18 @@ void loop()
   Wire.write((byte)(val2 >> BIT_OFFSET));               // the 8 most significant bits...
   Wire.write((byte)((val2 & 0x0F) << BIT_OFFSET));      // the 4 least significant bits...
   Wire.endTransmission();
+
+  /*
+  Serial.print("ch1:");
+  Serial.print(ch1);
+  Serial.print(" ch2:");
+  Serial.print(ch2);
+  Serial.print(" val1:");
+  Serial.print(val1);
+  Serial.print(" val2:");
+  Serial.println(val2);
+  */
+  
 }
 
 //range convert from PWM pulse width to MCP4725 12bit value 
@@ -126,7 +141,15 @@ int cnvrng(int _pwm)
   //scale convert from PWM to 12bit output value
   out = map( pwm, PWM_VAL_MIN, PWM_VAL_MAX, DA_OUTVAL_MIN, DA_OUTVAL_MAX );
   //Joystick Middle Position Correction
-  out += DA_OUTVAL_OFFSET;
+  out -= DA_OUTVAL_OFFSET;
+
+  //constrain 12bit output in user limitation range 
+  if(out < DA_OUTVAL_LOW_LIM){
+    out = DA_OUTVAL_LOW_LIM;
+  }
+  if(out > DA_OUTVAL_HIGH_LIM){
+    out = DA_OUTVAL_HIGH_LIM;
+  }
   
   //constrain 12bit output value
   if(out < DA_OUTVAL_MIN){
