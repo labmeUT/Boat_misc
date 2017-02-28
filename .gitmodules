@@ -1,0 +1,3 @@
+[submodule "Arduino/libraries/SBUS"]
+	path = Arduino/libraries/SBUS
+	url = https://github.com/zendes/SBUS
