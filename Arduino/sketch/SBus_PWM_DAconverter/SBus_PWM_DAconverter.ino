@@ -22,6 +22,7 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 */
 
 #include <Wire.h>//Include the Wire library to talk I2C
+#include <SBUS.h>
 
 //This is the I2C Address of the MCP4725, by default (A0 pulled to GND).
 //Please note that this breakout is for the MCP4725A0. 
@@ -30,6 +31,10 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define MCP4725_ADDR2 0x60 
 
 //user difinition
+#define SBUS_STEERING_CH       1
+#define SBUS_THROTTLE_CH       3
+#define SBUS_CUTTER_CH         5
+#define SBUS_CYLINDER_CH       6
 #define STEER_CH_PIN           6     //pin connected to steering ch
 #define THROTTLE_CH_PIN        7     //pin connected to throttle ch 
 #define PWM_VAL_MAX            2000  //PWM input value max
@@ -44,6 +49,7 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define DA_OUTVAL_HIGH_LIM     3800  //MCP4725 I2C output value user limitation high value
 #define DA_OUTVAL_LOW_LIM      750   //MCP4725 I2C output value user limitation low value
 #define DA_OUTVAL_OFFSET       100   //Joystick middle point is about 2.4mV. 1 OUTVAL equals to 1.3mV
+#define SBUS_TIMEOUT           500   //sbus timeout[ms]
 
 //Config Bits
 //Write Option
@@ -60,6 +66,7 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 int ch1; // Here's where we'll keep our channel values
 int ch2;
 
+SBUS sbus(Serial);
 
 //Sinewave Tables were generated using this calculator:
 //http://www.daycounter.com/Calculators/Sine-Generator-Calculator.phtml
@@ -71,25 +78,28 @@ void setup()
   
   Wire.begin();
   //Serial.begin(9600);
+  sbus.begin(false);
 }
 //---------------------------------------------------
 void loop()
 {
-  int ch1  = PWM_VAL_MID;   //initial value is middle because it is safe
-  int ch2  = PWM_VAL_MID;   //
+  //int ch1  = PWM_VAL_MID;   //initial value is middle because it is safe
+  //int ch2  = PWM_VAL_MID;   //
   int val1 = DA_OUTVAL_MID; //if these are middle, motors stop.
   int val2 = DA_OUTVAL_MID; //
-  
+  /*
   delay(10);
   ch1 = pulseIn(STEER_CH_PIN, HIGH, PULSEIN_TIMEOUT);    // Read the pulse width of 
   delay(15);
   ch2 = pulseIn(THROTTLE_CH_PIN, HIGH, PULSEIN_TIMEOUT); // each channel
-  
-  if(ch1 != PULSEIN_RETVAL_TIMEOUT && ch2 != PULSEIN_RETVAL_TIMEOUT)
+  */
+
+  //if(ch1 != PULSEIN_RETVAL_TIMEOUT && ch2 != PULSEIN_RETVAL_TIMEOUT)
+  if( millis() < sbus.getLastTime() + SBUS_TIMEOUT ) 
   {
     // convert value
-    val1 = cnvrng(ch1);
-    val2 = cnvrng(ch2);
+    val1 = cnvrng(sbus.getChannel(SBUS_STEERING_CH));
+    val2 = cnvrng(sbus.getChannel(SBUS_THROTTLE_CH));
   }
   else
   {
