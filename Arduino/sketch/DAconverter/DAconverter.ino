@@ -30,8 +30,8 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define MCP4725_ADDR2 0x60 
 
 //user difinition
-#define STEER_CH_PIN           6     //pin connected to steering ch
-#define THROTTLE_CH_PIN        7     //pin connected to throttle ch 
+#define STEER_CH_PIN           9     //pin connected to steering ch
+#define THROTTLE_CH_PIN        10     //pin connected to throttle ch 
 #define PWM_VAL_MAX            2000  //PWM input value max
 #define PWM_VAL_MID            1500  //PWM input value middle
 #define PWM_VAL_MIN            1000  //PWM input value min
