@@ -36,7 +36,7 @@ http://brainwagon.org/2011/02/24/arduino-mcp4725-breakout-board/
 #define PWM_VAL_MID            1500  //PWM input value middle
 #define PWM_VAL_MIN            1000  //PWM input value min
 #define PULSEIN_RETVAL_TIMEOUT 0     //pulseIn return value when it is timeout
-#define PULSEIN_TIMEOUT        20000 //pulseIn timeout [us]
+#define PULSEIN_TIMEOUT        200000 //pulseIn timeout [us]
 #define BIT_OFFSET             4     //offset bitnumber:because output is 12bit but I2C communication is done in each 8bit 
 #define DA_OUTVAL_MAX          4095  //MCP4725 I2C output value max (up to 4095)
 #define DA_OUTVAL_MID          2047  //MCP4725 I2C output value middle
@@ -70,7 +70,7 @@ void setup()
   pinMode(THROTTLE_CH_PIN, INPUT);
   
   Wire.begin();
-  //Serial.begin(9600);
+  //Serial.begin(57600);
 }
 //---------------------------------------------------
 void loop()
@@ -79,12 +79,10 @@ void loop()
   int ch2  = PWM_VAL_MID;   //
   int val1 = DA_OUTVAL_MID; //if these are middle, motors stop.
   int val2 = DA_OUTVAL_MID; //
-  
-  delay(10);
+
   ch1 = pulseIn(STEER_CH_PIN, HIGH, PULSEIN_TIMEOUT);    // Read the pulse width of 
-  delay(15);
   ch2 = pulseIn(THROTTLE_CH_PIN, HIGH, PULSEIN_TIMEOUT); // each channel
-  
+
   if(ch1 != PULSEIN_RETVAL_TIMEOUT && ch2 != PULSEIN_RETVAL_TIMEOUT)
   {
     // convert value
@@ -112,7 +110,7 @@ void loop()
   Wire.endTransmission();
 
   /*
-  Serial.print("ch1:");
+  Serial.print(" ch1:");
   Serial.print(ch1);
   Serial.print(" ch2:");
   Serial.print(ch2);
@@ -121,7 +119,6 @@ void loop()
   Serial.print(" val2:");
   Serial.println(val2);
   */
-  
 }
 
 //range convert from PWM pulse width to MCP4725 12bit value 
